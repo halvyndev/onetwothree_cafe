@@ -154,7 +154,7 @@ nav.scrolled{background:rgba(247,242,234,0.98)}
 }
 
 /* ===== DRAG SCROLL ===== */
-.drag-scroll{overflow-x:scroll;padding-bottom:8px;user-select:none;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}.drag-scroll::-webkit-scrollbar{display:none}
+.drag-scroll{overflow-x:scroll;padding-bottom:8px;user-select:none;scrollbar-width:none;touch-action:pan-x;overscroll-behavior-x:none}.drag-scroll::-webkit-scrollbar{display:none}
 .drag-scroll::-webkit-scrollbar{height:3px}
 .drag-scroll::-webkit-scrollbar-thumb{background:rgba(200,137,90,0.25);border-radius:2px}
 .drag-scroll-inner{display:flex;gap:20px;width:max-content;padding-right:72px}
@@ -872,57 +872,39 @@ document.head.appendChild(noCursorStyle);
 // NAV
 window.addEventListener('scroll',()=>document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>20));
 
-// DRAG SCROLL — momentum physics, clamped to content bounds
+// DRAG SCROLL — mouse momentum for desktop, 100% native for touch/mobile
 document.querySelectorAll('.drag-scroll').forEach(el=>{
-  let vel=0, raf=null, last=0, isDown=false, startX=0, startScroll=0;
+  let vel=0, raf=null, isDown=false, startX=0, startScroll=0, last=0;
 
   function maxScroll(){ return el.scrollWidth - el.clientWidth }
   function clamp(v){ return Math.max(0, Math.min(maxScroll(), v)) }
-  function setScroll(v){ el.scrollLeft = clamp(v) }
 
   function step(){
-    if(Math.abs(vel)<0.5){vel=0;return}
-    // stop momentum at boundaries
-    const next=el.scrollLeft-vel;
-    if(next<=0||next>=maxScroll()){ vel=0; setScroll(next); return }
-    el.scrollLeft=next;
-    vel*=0.92;
-    raf=requestAnimationFrame(step);
+    if(Math.abs(vel)<0.5){ vel=0; return }
+    el.scrollLeft = clamp(el.scrollLeft - vel);
+    vel *= 0.92;
+    raf = requestAnimationFrame(step);
   }
 
-  // MOUSE
-  el.addEventListener('mousedown',e=>{
+  // MOUSE ONLY — touch handled 100% natively by browser (respects iOS boundaries)
+  el.addEventListener('mousedown', e=>{
+    if(e.button !== 0) return;
     cancelAnimationFrame(raf);
     isDown=true; vel=0;
     startX=e.clientX; startScroll=el.scrollLeft; last=e.clientX;
+    e.preventDefault();
   });
-  document.addEventListener('mousemove',e=>{
-    if(!isDown)return;
-    vel=e.clientX-last; last=e.clientX;
-    setScroll(startScroll-(e.clientX-startX));
+  document.addEventListener('mousemove', e=>{
+    if(!isDown) return;
+    vel = e.clientX - last;
+    last = e.clientX;
+    el.scrollLeft = clamp(startScroll - (e.clientX - startX));
   });
-  document.addEventListener('mouseup',()=>{
-    if(!isDown)return;
-    isDown=false;
-    raf=requestAnimationFrame(step);
+  document.addEventListener('mouseup', ()=>{
+    if(!isDown) return;
+    isDown = false;
+    requestAnimationFrame(step);
   });
-
-  // TOUCH
-  let tLast=0, tVel=0, tStart=0, tScroll=0;
-  el.addEventListener('touchstart',e=>{
-    cancelAnimationFrame(raf);
-    tVel=0; tStart=e.touches[0].clientX;
-    tScroll=el.scrollLeft; tLast=e.touches[0].clientX;
-  },{passive:true});
-  el.addEventListener('touchmove',e=>{
-    const x=e.touches[0].clientX;
-    tVel=x-tLast; tLast=x;
-    setScroll(tScroll-(x-tStart));
-  },{passive:true});
-  el.addEventListener('touchend',()=>{
-    vel=tVel;
-    raf=requestAnimationFrame(step);
-  },{passive:true});
 });
 
 
