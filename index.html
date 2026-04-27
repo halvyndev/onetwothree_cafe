@@ -872,18 +872,25 @@ document.head.appendChild(noCursorStyle);
 // NAV
 window.addEventListener('scroll',()=>document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>20));
 
-// DRAG SCROLL — momentum physics for both desktop and mobile
+// DRAG SCROLL — momentum physics, clamped to content bounds
 document.querySelectorAll('.drag-scroll').forEach(el=>{
   let vel=0, raf=null, last=0, isDown=false, startX=0, startScroll=0;
 
+  function maxScroll(){ return el.scrollWidth - el.clientWidth }
+  function clamp(v){ return Math.max(0, Math.min(maxScroll(), v)) }
+  function setScroll(v){ el.scrollLeft = clamp(v) }
+
   function step(){
     if(Math.abs(vel)<0.5){vel=0;return}
-    el.scrollLeft-=vel;
+    // stop momentum at boundaries
+    const next=el.scrollLeft-vel;
+    if(next<=0||next>=maxScroll()){ vel=0; setScroll(next); return }
+    el.scrollLeft=next;
     vel*=0.92;
     raf=requestAnimationFrame(step);
   }
 
-  // MOUSE — desktop drag with momentum
+  // MOUSE
   el.addEventListener('mousedown',e=>{
     cancelAnimationFrame(raf);
     isDown=true; vel=0;
@@ -892,7 +899,7 @@ document.querySelectorAll('.drag-scroll').forEach(el=>{
   document.addEventListener('mousemove',e=>{
     if(!isDown)return;
     vel=e.clientX-last; last=e.clientX;
-    el.scrollLeft=startScroll-(e.clientX-startX);
+    setScroll(startScroll-(e.clientX-startX));
   });
   document.addEventListener('mouseup',()=>{
     if(!isDown)return;
@@ -900,7 +907,7 @@ document.querySelectorAll('.drag-scroll').forEach(el=>{
     raf=requestAnimationFrame(step);
   });
 
-  // TOUCH — track velocity then release with momentum
+  // TOUCH
   let tLast=0, tVel=0, tStart=0, tScroll=0;
   el.addEventListener('touchstart',e=>{
     cancelAnimationFrame(raf);
@@ -910,7 +917,7 @@ document.querySelectorAll('.drag-scroll').forEach(el=>{
   el.addEventListener('touchmove',e=>{
     const x=e.touches[0].clientX;
     tVel=x-tLast; tLast=x;
-    el.scrollLeft=tScroll-(x-tStart);
+    setScroll(tScroll-(x-tStart));
   },{passive:true});
   el.addEventListener('touchend',()=>{
     vel=tVel;
