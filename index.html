@@ -154,7 +154,7 @@ nav.scrolled{background:rgba(247,242,234,0.98)}
 }
 
 /* ===== DRAG SCROLL ===== */
-.drag-scroll{overflow-x:hidden;padding-bottom:8px;user-select:none;scrollbar-width:none;overscroll-behavior-x:none}.drag-scroll::-webkit-scrollbar{display:none}
+.drag-scroll{overflow-x:scroll;padding-bottom:8px;user-select:none;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}.drag-scroll::-webkit-scrollbar{display:none}
 .drag-scroll::-webkit-scrollbar{height:3px}
 .drag-scroll::-webkit-scrollbar-thumb{background:rgba(200,137,90,0.25);border-radius:2px}
 .drag-scroll-inner{display:flex;gap:20px;width:max-content;padding-right:72px}
