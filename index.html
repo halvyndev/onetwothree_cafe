@@ -154,7 +154,7 @@ nav.scrolled{background:rgba(247,242,234,0.98)}
 }
 
 /* ===== DRAG SCROLL ===== */
-.drag-scroll{overflow-x:auto;padding-bottom:12px;user-select:none;scrollbar-width:thin;scrollbar-color:rgba(200,137,90,0.25) transparent;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.drag-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:auto;padding-bottom:8px;scrollbar-width:none}.drag-scroll::-webkit-scrollbar{display:none}
 .drag-scroll::-webkit-scrollbar{height:3px}
 .drag-scroll::-webkit-scrollbar-thumb{background:rgba(200,137,90,0.25);border-radius:2px}
 .drag-scroll-inner{display:flex;gap:20px;width:max-content;padding-right:72px}
@@ -872,29 +872,19 @@ document.head.appendChild(noCursorStyle);
 // NAV
 window.addEventListener('scroll',()=>document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>20));
 
-// DRAG SCROLL — NO setPointerCapture (causes button tap theft on mobile)
+// Drag scroll: mouse only for desktop, touch native for mobile
 document.querySelectorAll('.drag-scroll').forEach(el=>{
-  let down=false, startX=0, scrollStart=0, moved=false;
-
+  let down=false, startX=0, startScroll=0;
   el.addEventListener('mousedown',e=>{
-    if(e.button!==0)return;
-    down=true; moved=false;
-    startX=e.clientX; scrollStart=el.scrollLeft;
+    down=true;
+    startX=e.clientX;
+    startScroll=el.scrollLeft;
   });
-  window.addEventListener('mouseup',()=>{down=false});
-  el.addEventListener('mousemove',e=>{
+  document.addEventListener('mousemove',e=>{
     if(!down)return;
-    const dx=e.clientX-startX;
-    if(Math.abs(dx)>4){moved=true; el.scrollLeft=scrollStart-dx;}
+    el.scrollLeft=startScroll-(e.clientX-startX);
   });
-  // Touch: use native momentum via CSS, just need touchstart/touchmove
-  let tX=0,tS=0;
-  el.addEventListener('touchstart',e=>{
-    tX=e.touches[0].clientX; tS=el.scrollLeft;
-  },{passive:true});
-  el.addEventListener('touchmove',e=>{
-    el.scrollLeft=tS-(e.touches[0].clientX-tX);
-  },{passive:true});
+  document.addEventListener('mouseup',()=>down=false);
 });
 
 
